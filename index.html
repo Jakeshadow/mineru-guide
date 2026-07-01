@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MinerU Production Guide — Deploy in 2 Hours, Not 2 Weeks</title>
+  <meta name="description" content="72K GitHub stars. Zero English production guides. Until now.">
+  <meta name="robots" content="index, follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"></noscript>
+  <meta property="og:title" content="MinerU Production Guide — 72K Stars, Zero English Guides">
+  <meta property="og:description" content="1.8M PyPI downloads. Zero English production guides. Until now.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mineru.dev/">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mineru.dev/assets/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MinerU Production Guide — 72K Stars, Zero English Guides">
+  <meta name="twitter:description" content="1.8M PyPI downloads. Zero English production guides. Until now.">
+  <meta name="twitter:image" content="https://mineru.dev/assets/og-image.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://mineru.dev/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" }
+    ]
+  }
+  </script>
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+  <script>
+    Paddle.Initialize({
+      token: "live_ce00442faf7f18c3f065320ce95",
+      environment: "production",
+      checkout: {
+        settings: {
+          displayMode: "overlay",
+          theme: "light",
+          locale: "auto",
+          successUrl: "https://mineru.dev/thanks/?_ptxn={transaction_id}"
+        }
+      }
+    });
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does this guide cover MinerU Cloud API?",
+        "acceptedAnswer": {"@type": "Answer", "text": "No. MinerU is self-hosted open-source software. This guide covers Docker deployment, multi-node batch processing, GPU performance tuning, and production troubleshooting for your own infrastructure."}
+      },
+      {
+        "@type": "Question",
+        "name": "Does this work with MinerU v2.x?",
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. The guide targets the latest stable MinerU release and includes version-specific notes where behavior differs across versions. We update for each major release."}
+      },
+      {
+        "@type": "Question",
+        "name": "What hardware do I need?",
+        "acceptedAnswer": {"@type": "Answer", "text": "The guide covers both CPU-only and GPU-accelerated paths. For production batch processing, an NVIDIA GPU with 8GB+ VRAM is recommended. The hardware sizing section gives exact requirements for your throughput targets."}
+      },
+      {
+        "@type": "Question",
+        "name": "Is there a refund policy?",
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. 30-day money-back guarantee. If this guide doesn't save you at least 20 hours of production debugging, email us for a full refund. No questions asked."}
+      },
+      {
+        "@type": "Question",
+        "name": "Is this affiliated with OpenDataLab?",
+        "acceptedAnswer": {"@type": "Answer", "text": "No. This is an unofficial community guide. We are not affiliated with OpenDataLab or the MinerU project. We link to the official repository and recommend it as the primary resource for API reference."}
+      },
+      {
+        "@type": "Question",
+        "name": "Will this guide stay updated?",
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. The guide is updated for each new MinerU release. Version-specific notes are included where behavior differs. Lifetime updates are included in the one-time purchase."}
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 100 100"><rect fill="#7c3aed" width="100" height="100" rx="22"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="56" font-family="sans-serif" font-weight="bold">MU</text></svg>MinerU Guide
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/production-guide/">Production Guide</a></li>
+        <li><a href="/chapters/docker-setup/">Free Chapters</a></li>
+        <li><a href="https://github.com/opendatalab/MinerU" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="/production-guide/" class="nav-cta">Get the Guide — $39</a></li>
+      </ul>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <p class="hero-badge">Unofficial Community Guide</p>
+        <h1>1.8 million downloads. One README.</h1>
+        <p class="hero-subtitle">Docker, multi-node GPU clusters, vLLM acceleration, production error Bible — everything the Chinese community knows that the English docs don't cover. 6 chapters. Deploy in 2 hours.</p>
+        <div class="hero-actions">
+          <a href="/production-guide/" class="btn btn-primary">Get the Production Guide — $39</a>
+          <a href="/chapters/docker-setup/" class="btn btn-outline">Read Free Preview</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><strong>72.3K</strong> GitHub Stars</div>
+          <div class="hero-stat"><strong>1.8M</strong> PyPI Downloads</div>
+          <div class="hero-stat"><strong>0</strong> English Production Guides</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <h2>What This Guide Covers</h2>
+        <p class="section-lead">Six chapters. Each solves a problem buried in Chinese-language forums, Gitee issues, and Bilibili videos — that the English README never mentions.</p>
+        <div class="chapters-grid">
+          <div class="chapter-card">
+            <h3>1. Architecture & Pipeline Design</h3>
+            <p>Text-based vs scanned vs mixed pipeline decision tree. CPU vs GPU path selection. vLLM vs sglang backend trade-offs.</p>
+            <p><small>You'll get: Decision tree, pipeline configs, backend selection matrix</small></p>
+          </div>
+          <div class="chapter-card">
+            <h3>2. Docker Production Setup</h3>
+            <p>Why Docker matters for reproducibility. The full Chromium-like dependency chain: Python 3.10-3.12, ray, model downloads.</p>
+            <p><small>You'll get: Multi-stage Dockerfile, docker-compose.yml, health checks</small></p>
+          </div>
+          <div class="chapter-card">
+            <h3>3. Multi-Node Batch Processing</h3>
+            <p>Ray cluster architecture for processing thousands of PDFs. Shared storage, queue management, failure recovery.</p>
+            <p><small>You'll get: Ray cluster config, queue manager, recovery scripts</small></p>
+          </div>
+          <div class="chapter-card">
+            <h3>4. Performance Tuning</h3>
+            <p>Batch size optimization, GPU memory allocation, concurrent worker scaling. Stop guessing and start measuring.</p>
+            <p><small>You'll get: Benchmarking scripts, tuning reference table, GPU profiler</small></p>
+          </div>
+          <div class="chapter-card">
+            <h3>5. Error Troubleshooting Bible</h3>
+            <p>20+ documented errors with diagnosis and fix. OOM killers, CUDA errors, ray actor failures, model download corruption.</p>
+            <p><small>You'll get: Error reference table, debugging checklist, memory profiler</small></p>
+          </div>
+          <div class="chapter-card">
+            <h3>6. MinerU vs Docling vs Marker</h3>
+            <p>Benchmark data, accuracy comparison, speed tests. When MinerU wins, when it doesn't, and how to migrate.</p>
+            <p><small>You'll get: Benchmark results, decision matrix, migration guide</small></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt">
+      <div class="container">
+        <h2>Why No One Else Wrote This</h2>
+        <p class="section-lead">MinerU's 175 releases have been documented almost exclusively in Chinese — on Gitee, Bilibili, and Chinese tech blogs. The English README is an API reference. The Chinese community has full deployment guides with battle-tested production configs. This guide bridges that gap.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <h2 class="anti-title">Who This Is For</h2>
+        <div class="anti-grid">
+          <div class="anti-item">
+            <strong>For: Self-hosting developers</strong>
+            <p>You want MinerU running on your own Docker host, GPU server, or Ray cluster. Not a managed API.</p>
+          </div>
+          <div class="anti-item">
+            <strong>For: Teams processing PDFs at scale</strong>
+            <p>You're building document pipelines, RAG systems, or data extraction workflows. You need MinerU stable in production.</p>
+          </div>
+          <div class="anti-item">
+            <strong>For: Engineers who don't read Chinese</strong>
+            <p>The best MinerU deployment knowledge is in Chinese forums and Bilibili videos. This guide translates the production wisdom, not just the words.</p>
+          </div>
+          <div class="anti-item">
+            <strong>Not for: Casual single-PDF users</strong>
+            <p>If <code>pip install magic-pdf && magic-pdf pdf-command</code> is all you need, this guide is overkill. The official README covers that.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-strip">
+      <div class="container">
+        <h2>Stop reading Chinese forums at 2am.</h2>
+        <p>6 chapters. Docker Compose templates. Ray cluster configs. 30-day money-back guarantee.</p>
+        <a href="/production-guide/" class="btn btn-primary" style="font-size:1.05rem;padding:14px 40px;">Get the Production Guide — $39</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <h2>FAQ</h2>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>Does this guide cover the MinerU Cloud API?</summary>
+            <div class="faq-answer"><p>No. MinerU is self-hosted open-source software. This guide covers Docker deployment, multi-node batch processing, GPU performance tuning, and production troubleshooting on your own infrastructure.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>Does this work with the latest MinerU release?</summary>
+            <div class="faq-answer"><p>Yes. The guide targets the latest stable MinerU release and includes version-specific notes where behavior differs. Lifetime updates cover all future major releases.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>What hardware do I need?</summary>
+            <div class="faq-answer"><p>The guide covers both CPU-only and GPU-accelerated paths. For production batch processing, an NVIDIA GPU with 8GB+ VRAM is recommended. Chapter 4 includes a full hardware sizing guide for your throughput targets.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>Is there a refund policy?</summary>
+            <div class="faq-answer"><p>Yes. 30-day money-back guarantee. If this guide doesn't save you at least 20 hours of production debugging, email us for a full refund. Details on our <a href="/refunds/">refunds page</a>.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>Is this affiliated with OpenDataLab?</summary>
+            <div class="faq-answer"><p>No. This is an unofficial community guide. We are not affiliated with OpenDataLab or the MinerU project. We link to the <a href="https://github.com/opendatalab/MinerU">official repository</a> and recommend it as the primary resource for API reference.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>Will this guide stay updated?</summary>
+            <div class="faq-answer"><p>Yes. The guide is updated for each new MinerU release. Version-specific notes are included where behavior differs. Lifetime updates are included in the one-time purchase.</p></div>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Unofficial community resource. Not affiliated with OpenDataLab. <a href="https://github.com/opendatalab/MinerU">Official MinerU repo</a>.</p>
+      <p><a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a> &middot; <a href="/refunds/">Money-Back Guarantee</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Node Batch Processing — MinerU Production Guide</title>
+  <meta name="description" content="Ray cluster setup for distributed PDF processing. Shared storage, queue management, autoscaling for MinerU at scale.">
+  <meta name="robots" content="index, follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"></noscript>
+  <meta property="og:title" content="Multi-Node Batch Processing — MinerU Production Guide">
+  <meta property="og:description" content="Ray cluster setup for distributed PDF processing. Shared storage, queue management, autoscaling for MinerU at scale.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://mineru.dev/chapters/multi-node/">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mineru.dev/assets/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Multi-Node Batch Processing — MinerU Production Guide">
+  <meta name="twitter:description" content="Ray cluster setup for distributed PDF processing. Shared storage, queue management, autoscaling for MinerU at scale.">
+  <meta name="twitter:image" content="https://mineru.dev/assets/og-image.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://mineru.dev/chapters/multi-node/">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" },
+        { "@type": "ListItem", "position": 2, "name": "Production Guide", "item": "https://mineru.dev/production-guide/" },
+        { "@type": "ListItem", "position": 3, "name": "Multi-Node Batch Processing", "item": "https://mineru.dev/chapters/multi-node/" }
+      ]
+    }
+  </script>
+</head>
+<body>
+  <div class="preview-banner">Free preview — 30% of full chapter. <a href="/production-guide/">Get the guide</a> for the complete Ray cluster + queue management code.</div>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 100 100"><rect fill="#7c3aed" width="100" height="100" rx="22"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="56" font-family="sans-serif" font-weight="bold">MU</text></svg>MinerU Guide
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/production-guide/">Production Guide</a></li>
+        <li><a href="/chapters/docker-setup/">Free Chapters</a></li>
+        <li><a href="https://github.com/opendatalab/MinerU" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="/production-guide/" class="nav-cta">Get the Guide — $39</a></li>
+      </ul>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container" style="max-width:780px;">
+        <p style="font-size:0.85rem;color:var(--accent);font-weight:600;margin-bottom:8px;">Chapter 3</p>
+        <h1>Multi-Node Batch Processing</h1>
+        <p class="section-lead">One GPU processes ~15 pages/second on scanned PDFs. A 10,000-document batch with average 50 pages each = 500,000 pages = 9 hours on a single GPU. Multi-node cuts that to minutes.</p>
+
+        <h2>Ray Cluster Architecture for MinerU</h2>
+        <p>Ray is MinerU's distributed backbone. It handles task scheduling, GPU allocation, and failure recovery. A production cluster needs three components:</p>
+        <ul>
+          <li><strong>Ray Head Node</strong> — Scheduler + object store coordinator. Lightweight — 2 vCPU, 4GB RAM is enough. Runs the queue manager.</li>
+          <li><strong>Ray Worker Nodes</strong> — GPU instances that run the actual MinerU pipelines. These are the expensive ones.</li>
+          <li><strong>Shared Storage</strong> — NFS or S3 bucket for input PDFs and output Markdown. Every worker needs read/write access.</li>
+        </ul>
+
+        <h2>Why Not Just Multiprocessing?</h2>
+        <p>Python's <code>multiprocessing</code> hits three walls with MinerU:</p>
+        <ol>
+          <li><strong>GIL contention</strong> — MinerU's C-extensions (PyMuPDF, PaddlePaddle) release the GIL, but the Python orchestration layer doesn't.</li>
+          <li><strong>Memory duplication</strong> — Each process loads its own copy of the 2GB+ models. With 8 workers, that's 16GB just in model duplication.</li>
+          <li><strong>No failure isolation</strong> — One OOM kill on a corrupted PDF takes down your entire batch. Ray isolates failures to individual tasks.</li>
+        </ol>
+
+        <h2>Storage Architecture</h2>
+        <p>The shared filesystem is the hardest part of multi-node MinerU. Workers need synchronized access to input files, model cache, and output directories:</p>
+        <pre><code class="language-text">s3://pdf-pipeline/
+  |-- input/          # Upload PDFs here
+  |-- output/         # MinerU writes Markdown here
+  |-- failed/         # Corrupted/unprocessable PDFs
+  |-- models/         # Shared model cache (read-only)
+  |-- checkpoint/     # Ray checkpoint directory</code></pre>
+
+        <div class="paywall">
+          <div class="paywall-locked">&#128274;</div>
+          <p><strong>Full chapter continues with:</strong></p>
+          <p>Complete Ray cluster YAML config for AWS/GCP · Queue manager with priority lanes + dead-letter queue · Autoscaling rules for spot/preemptible instances · Failure recovery with checkpoint/resume · Monitoring dashboard setup (Grafana + Ray Dashboard) · Cost optimization: spot vs on-demand vs reserved</p>
+          <a href="/production-guide/" class="btn btn-primary">Get the Full Guide — $39</a>
+        </div>
+
+        <div class="chapter-nav">
+          <a href="/chapters/docker-setup/">← Chapter 2: Docker Setup</a>
+          <a href="/chapters/performance/">Chapter 4: Performance →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Unofficial community resource. Not affiliated with OpenDataLab. <a href="https://github.com/opendatalab/MinerU">Official MinerU repo</a>.</p>
+      <p><a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a> &middot; <a href="/refunds/">Money-Back Guarantee</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js" defer></script>
+</body>
+</html>

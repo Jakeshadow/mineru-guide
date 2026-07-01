@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker Production Setup — MinerU Production Guide</title>
+  <meta name="description" content="Multi-stage Dockerfile, docker-compose with vLLM, model caching. Reproducible MinerU deployments that survive production.">
+  <meta name="robots" content="index, follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"></noscript>
+  <meta property="og:title" content="Docker Production Setup — MinerU Production Guide">
+  <meta property="og:description" content="Multi-stage Dockerfile, docker-compose with vLLM, model caching. Reproducible MinerU deployments that survive production.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://mineru.dev/chapters/docker-setup/">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mineru.dev/assets/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Docker Production Setup — MinerU Production Guide">
+  <meta name="twitter:description" content="Multi-stage Dockerfile, docker-compose with vLLM, model caching. Reproducible MinerU deployments that survive production.">
+  <meta name="twitter:image" content="https://mineru.dev/assets/og-image.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://mineru.dev/chapters/docker-setup/">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" },
+        { "@type": "ListItem", "position": 2, "name": "Production Guide", "item": "https://mineru.dev/production-guide/" },
+        { "@type": "ListItem", "position": 3, "name": "Docker Production Setup", "item": "https://mineru.dev/chapters/docker-setup/" }
+      ]
+    }
+  </script>
+</head>
+<body>
+  <div class="preview-banner">Free preview — 35% of full chapter. <a href="/production-guide/">Get the guide</a> for the complete Dockerfile + compose configs.</div>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 100 100"><rect fill="#7c3aed" width="100" height="100" rx="22"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="56" font-family="sans-serif" font-weight="bold">MU</text></svg>MinerU Guide
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/production-guide/">Production Guide</a></li>
+        <li><a href="/chapters/docker-setup/">Free Chapters</a></li>
+        <li><a href="https://github.com/opendatalab/MinerU" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="/production-guide/" class="nav-cta">Get the Guide — $39</a></li>
+      </ul>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container" style="max-width:780px;">
+        <p style="font-size:0.85rem;color:var(--accent);font-weight:600;margin-bottom:8px;">Chapter 2</p>
+        <h1>Docker Production Setup</h1>
+        <p class="section-lead">MinerU's dependency chain is deep: Python 3.10-3.12, ray, PyMuPDF, PaddleOCR, vLLM, and 2GB+ of model files. One wrong version and nothing works. Docker fixes this permanently.</p>
+
+        <h2>Why Docker Matters for MinerU</h2>
+        <p>MinerU has one of the deepest dependency chains of any Python PDF tool. A production deployment touches:</p>
+        <ul>
+          <li><strong>Python 3.10-3.12</strong> — Strict version window. 3.9 and 3.13 both fail on different dependencies.</li>
+          <li><strong>ray 2.x</strong> — Distributed computing framework. Version-sensitive with protobuf and grpcio.</li>
+          <li><strong>PyMuPDF + PaddleOCR + vLLM</strong> — Three heavy libraries with conflicting transitive dependencies.</li>
+          <li><strong>Model files</strong> — 2-4GB of layout detection + OCR + VLM models that must be pre-downloaded.</li>
+        </ul>
+        <p>A Docker image pins all of this. No "works on my machine." No CUDA version mismatch. No model re-download on every deploy.</p>
+
+        <h2>The Dependency Chain, Visualized</h2>
+        <pre><code class="language-text">mineru (magic-pdf)
+  |-- ray[default] >= 2.0
+  |     |-- protobuf >= 3.15
+  |     |-- grpcio >= 1.32
+  |-- PyMuPDF >= 1.23
+  |-- PaddleOCR >= 2.7
+  |     |-- paddlepaddle-gpu >= 2.5 (GPU path)
+  |     |-- paddlepaddle (CPU path)
+  |-- vLLM >= 0.4 (GPU path, optional)
+  |     |-- transformers >= 4.40
+  |     |-- torch >= 2.0
+  |-- Models (downloaded at first run)
+        |-- layout detection (~300MB)
+        |-- OCR recognition (~900MB)
+        |-- VLM (~2GB, GPU path only)</code></pre>
+
+        <h2>Key Dockerfile Decisions</h2>
+        <p>Before you write a single line, decide:</p>
+        <ul>
+          <li><strong>Base image</strong> — <code>nvidia/cuda:12.1-runtime-ubuntu22.04</code> for GPU, <code>python:3.11-slim-bookworm</code> for CPU-only.</li>
+          <li><strong>Model strategy</strong> — Bake models into the image (faster cold start, larger image) or volume-mount (smaller image, download on first run).</li>
+          <li><strong>Ray setup</strong> — Single-node (just ray.init() in the container) vs multi-node (ray head + worker containers).</li>
+        </ul>
+
+        <div class="paywall">
+          <div class="paywall-locked">&#128274;</div>
+          <p><strong>Full chapter continues with:</strong></p>
+          <p>Complete multi-stage production Dockerfile (GPU + CPU variants) · docker-compose.yml with MinerU + vLLM + Redis · Model download caching strategy (no re-downloading 2GB models per rebuild) · Health checks, resource limits, volume mounts · CI integration for automated image builds</p>
+          <a href="/production-guide/" class="btn btn-primary">Get the Full Guide — $39</a>
+        </div>
+
+        <div class="chapter-nav">
+          <a href="/chapters/architecture/">← Chapter 1: Architecture</a>
+          <a href="/chapters/multi-node/">Chapter 3: Multi-Node →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Unofficial community resource. Not affiliated with OpenDataLab. <a href="https://github.com/opendatalab/MinerU">Official MinerU repo</a>.</p>
+      <p><a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a> &middot; <a href="/refunds/">Money-Back Guarantee</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js" defer></script>
+</body>
+</html>

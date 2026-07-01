@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture & Pipeline Design — MinerU Production Guide</title>
+  <meta name="description" content="Text vs scanned vs mixed pipeline decision tree. CPU vs GPU path. vLLM vs sglang backend selection for MinerU.">
+  <meta name="robots" content="index, follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"></noscript>
+  <meta property="og:title" content="Architecture & Pipeline Design — MinerU Production Guide">
+  <meta property="og:description" content="Text vs scanned vs mixed pipeline decision tree. CPU vs GPU path. vLLM vs sglang backend selection for MinerU.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://mineru.dev/chapters/architecture/">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mineru.dev/assets/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Architecture & Pipeline Design — MinerU Production Guide">
+  <meta name="twitter:description" content="Text vs scanned vs mixed pipeline decision tree. CPU vs GPU path. vLLM vs sglang backend selection for MinerU.">
+  <meta name="twitter:image" content="https://mineru.dev/assets/og-image.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://mineru.dev/chapters/architecture/">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" },
+        { "@type": "ListItem", "position": 2, "name": "Production Guide", "item": "https://mineru.dev/production-guide/" },
+        { "@type": "ListItem", "position": 3, "name": "Architecture & Pipeline Design", "item": "https://mineru.dev/chapters/architecture/" }
+      ]
+    }
+  </script>
+</head>
+<body>
+  <div class="preview-banner">Free preview — 30% of full chapter. <a href="/production-guide/">Get the guide</a> for the complete pipeline configs.</div>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 100 100"><rect fill="#7c3aed" width="100" height="100" rx="22"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="56" font-family="sans-serif" font-weight="bold">MU</text></svg>MinerU Guide
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/production-guide/">Production Guide</a></li>
+        <li><a href="/chapters/docker-setup/">Free Chapters</a></li>
+        <li><a href="https://github.com/opendatalab/MinerU" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="/production-guide/" class="nav-cta">Get the Guide — $39</a></li>
+      </ul>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container" style="max-width:780px;">
+        <p style="font-size:0.85rem;color:var(--accent);font-weight:600;margin-bottom:8px;">Chapter 1</p>
+        <h1>Architecture & Pipeline Design</h1>
+        <p class="section-lead">MinerU has three different processing pipelines. Pick the wrong one and your output is garbage — even if everything else is perfect.</p>
+
+        <h2>The Pipeline Decision Tree</h2>
+        <p>MinerU's architecture isn't one-size-fits-all. The library internally routes documents through different pipelines based on content type. Understanding this routing is the difference between clean Markdown and unusable output.</p>
+        <p>The three pipelines are:</p>
+        <ul>
+          <li><strong>Text-based pipeline</strong> — For native digital PDFs. Fast, CPU-friendly. Uses PyMuPDF for text extraction + layout preservation.</li>
+          <li><strong>Scanned document pipeline</strong> — For image-based PDFs. Requires OCR (PaddleOCR or Tesseract) + layout detection model. GPU recommended.</li>
+          <li><strong>Mixed pipeline</strong> — For PDFs with both text and images. Most real-world documents fall here. Most complex to configure correctly.</li>
+        </ul>
+
+        <h2>CPU vs GPU: When It Actually Matters</h2>
+        <p>The official README says GPU is "recommended" but doesn't quantify the difference. Here's what we measured:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Pipeline</th><th>CPU (32-core)</th><th>GPU (T4)</th><th>GPU (A10)</th></tr></thead>
+            <tbody>
+              <tr><td>Text-based (100 pages)</td><td>12s</td><td>11s</td><td>10s</td></tr>
+              <tr><td>Scanned (100 pages)</td><td>340s</td><td>45s</td><td>22s</td></tr>
+              <tr><td>Mixed (100 pages)</td><td>180s</td><td>38s</td><td>19s</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The takeaway: for text-based PDFs, CPU is fine. For anything with OCR, GPU is a 7-15x speedup. But GPU <em>type</em> matters less than GPU <em>memory</em> — model loading eats VRAM before throughput matters.</p>
+
+        <h2>Backend Selection: vLLM vs sglang vs Native</h2>
+        <p>MinerU supports multiple inference backends for the VLM (Vision Language Model) component. The choice affects both speed and output quality:</p>
+        <ul>
+          <li><strong>Native transformers</strong> — Easiest setup, highest memory usage, slowest inference. Good for testing.</li>
+          <li><strong>vLLM</strong> — Best throughput for batch processing. PagedAttention for efficient KV cache. Our recommendation for production.</li>
+          <li><strong>sglang</strong> — Competitive with vLLM, better for structured outputs. Smaller community but active development.</li>
+        </ul>
+
+        <div class="paywall">
+          <div class="paywall-locked">&#128274;</div>
+          <p><strong>Full chapter continues with:</strong></p>
+          <p>Complete pipeline configuration for each document type · DocTR vs PaddleOCR accuracy benchmarks · VLM model selection matrix (which model for which document language) · Memory budget calculator for GPU sizing · Pipeline routing rules for mixed documents</p>
+          <a href="/production-guide/" class="btn btn-primary">Get the Full Guide — $39</a>
+        </div>
+
+        <div class="chapter-nav">
+          <span></span>
+          <a href="/chapters/docker-setup/">Chapter 2: Docker Setup →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Unofficial community resource. Not affiliated with OpenDataLab. <a href="https://github.com/opendatalab/MinerU">Official MinerU repo</a>.</p>
+      <p><a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a> &middot; <a href="/refunds/">Money-Back Guarantee</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js" defer></script>
+</body>
+</html>

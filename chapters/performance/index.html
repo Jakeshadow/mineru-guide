@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Performance Tuning — MinerU Production Guide</title>
+  <meta name="description" content="Batch size optimization, GPU memory tuning, concurrent worker scaling. Benchmarking scripts for MinerU throughput.">
+  <meta name="robots" content="index, follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"></noscript>
+  <meta property="og:title" content="Performance Tuning — MinerU Production Guide">
+  <meta property="og:description" content="Batch size optimization, GPU memory tuning, concurrent worker scaling. Benchmarking scripts for MinerU throughput.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://mineru.dev/chapters/performance/">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mineru.dev/assets/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Performance Tuning — MinerU Production Guide">
+  <meta name="twitter:description" content="Batch size optimization, GPU memory tuning, concurrent worker scaling. Benchmarking scripts for MinerU throughput.">
+  <meta name="twitter:image" content="https://mineru.dev/assets/og-image.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://mineru.dev/chapters/performance/">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" },
+        { "@type": "ListItem", "position": 2, "name": "Production Guide", "item": "https://mineru.dev/production-guide/" },
+        { "@type": "ListItem", "position": 3, "name": "Performance Tuning", "item": "https://mineru.dev/chapters/performance/" }
+      ]
+    }
+  </script>
+</head>
+<body>
+  <div class="preview-banner">Free preview — 30% of full chapter. <a href="/production-guide/">Get the guide</a> for benchmarking scripts + tuning reference table.</div>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 100 100"><rect fill="#7c3aed" width="100" height="100" rx="22"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="56" font-family="sans-serif" font-weight="bold">MU</text></svg>MinerU Guide
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/production-guide/">Production Guide</a></li>
+        <li><a href="/chapters/docker-setup/">Free Chapters</a></li>
+        <li><a href="https://github.com/opendatalab/MinerU" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="/production-guide/" class="nav-cta">Get the Guide — $39</a></li>
+      </ul>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container" style="max-width:780px;">
+        <p style="font-size:0.85rem;color:var(--accent);font-weight:600;margin-bottom:8px;">Chapter 4</p>
+        <h1>Performance Tuning</h1>
+        <p class="section-lead">Your GPU sits at 40% utilization while a queue of 5,000 PDFs piles up. The defaults aren't optimized for your hardware. Here's how to fix it.</p>
+
+        <h2>The Three Knobs That Actually Matter</h2>
+        <p>MinerU performance tuning boils down to three parameters. Everything else is marginal:</p>
+        <ol>
+          <li><strong>Batch size</strong> — How many pages MinerU processes in one forward pass. Bigger = more GPU throughput, but more VRAM. The sweet spot is usually 4-8 for scanned PDFs on a T4, 8-16 on an A10.</li>
+          <li><strong>Concurrent workers</strong> — How many Ray actors process PDFs in parallel. Each worker loads its own model copy. Too many and you OOM. Too few and GPU sits idle.</li>
+          <li><strong>VLM offload</strong> — Whether the VLM runs on the same GPU as OCR or a separate one. Splitting them can double throughput for mixed-pipeline documents.</li>
+        </ol>
+
+        <h2>GPU Memory Budget</h2>
+        <p>Before tuning, understand where your VRAM goes. Here's the memory budget for a typical T4 (16GB):</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Component</th><th>VRAM Usage</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td>Layout detection model</td><td>~1.2 GB</td><td>DocTR or PaddleOCR layout</td></tr>
+              <tr><td>OCR recognition model</td><td>~800 MB</td><td>PaddleOCR rec</td></tr>
+              <tr><td>VLM (optional)</td><td>~4-8 GB</td><td>Depends on model size</td></tr>
+              <tr><td>CUDA context + overhead</td><td>~500 MB</td><td>CUDA runtime + cuDNN</td></tr>
+              <tr><td>Batch processing workspace</td><td>~2-4 GB</td><td>Scales with batch size</td></tr>
+              <tr><td><strong>Remaining for 2nd worker</strong></td><td><strong>~2-7 GB</strong></td><td>Only if VLM is offloaded</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>On a T4 with VLM enabled, you get <strong>one worker</strong>. Without VLM (text-only pipeline), you can run <strong>2-3 workers</strong> on the same GPU.</p>
+
+        <h2>Quick Wins Before Deep Tuning</h2>
+        <ul>
+          <li><strong>Disable OCR for text-based PDFs</strong> — MinerU sometimes runs OCR on pages that don't need it. Set <code>enable_ocr: auto</code> instead of <code>true</code>.</li>
+          <li><strong>Pre-sort PDFs by page count</strong> — Batch similar-sized PDFs together. One 500-page PDF in a batch of 10-page PDFs creates a straggler that holds up the entire batch.</li>
+          <li><strong>Use FP16 for VLM</strong> — Half precision cuts VLM memory by ~40% with negligible accuracy loss for document understanding tasks.</li>
+        </ul>
+
+        <div class="paywall">
+          <div class="paywall-locked">&#128274;</div>
+          <p><strong>Full chapter continues with:</strong></p>
+          <p>Complete benchmarking scripts for your specific hardware · Tuning reference table (T4/A10/A100/L40S at batch sizes 1-32) · Concurrent worker scaling formula · GPU memory profiler script · Throughput optimization by document type · Cost-per-page optimization for cloud GPU instances</p>
+          <a href="/production-guide/" class="btn btn-primary">Get the Full Guide — $39</a>
+        </div>
+
+        <div class="chapter-nav">
+          <a href="/chapters/multi-node/">← Chapter 3: Multi-Node</a>
+          <a href="/chapters/troubleshooting/">Chapter 5: Error Bible →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Unofficial community resource. Not affiliated with OpenDataLab. <a href="https://github.com/opendatalab/MinerU">Official MinerU repo</a>.</p>
+      <p><a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a> &middot; <a href="/refunds/">Money-Back Guarantee</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js" defer></script>
+</body>
+</html>

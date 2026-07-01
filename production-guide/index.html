@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MinerU Production Guide — $39 One-Time, Lifetime Updates</title>
+  <meta name="description" content="6-chapter production guide for self-hosting MinerU. Docker, Ray clusters, GPU tuning. $39 one-time. 30-day money-back guarantee.">
+  <meta name="robots" content="index, follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"></noscript>
+  <meta property="og:title" content="MinerU Production Guide — $39 One-Time, Lifetime Updates">
+  <meta property="og:description" content="6-chapter production guide for self-hosting MinerU. Docker, Ray clusters, GPU tuning. $39 one-time. 30-day money-back guarantee.">
+  <meta property="og:image" content="https://mineru.dev/assets/og-image.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mineru.dev/production-guide/">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://mineru.dev/assets/og-image.svg">
+  <meta name="twitter:title" content="MinerU Production Guide — $39 One-Time, Lifetime Updates">
+  <meta name="twitter:description" content="6-chapter production guide for self-hosting MinerU. Docker, Ray clusters, GPU tuning. $39 one-time. 30-day money-back guarantee.">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://mineru.dev/production-guide/">
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+  <script>
+    Paddle.Initialize({
+      token: "live_ce00442faf7f18c3f065320ce95",
+      environment: "production",
+      checkout: {
+        settings: {
+          displayMode: "overlay",
+          theme: "light",
+          locale: "auto",
+          successUrl: "https://mineru.dev/thanks/?_ptxn={transaction_id}"
+        }
+      }
+    });
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" },
+        { "@type": "ListItem", "position": 2, "name": "Production Guide", "item": "https://mineru.dev/production-guide/" }
+      ]
+    }
+  </script>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 100 100"><rect fill="#7c3aed" width="100" height="100" rx="22"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="56" font-family="sans-serif" font-weight="bold">MU</text></svg>MinerU Guide
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/production-guide/">Production Guide</a></li>
+        <li><a href="/chapters/docker-setup/">Free Chapters</a></li>
+        <li><a href="https://github.com/opendatalab/MinerU" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="/production-guide/" class="nav-cta">Get the Guide — $39</a></li>
+      </ul>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+  <section class="hero">
+    <div class="container">
+      <p class="hero-badge">Production Guide</p>
+      <h1>MinerU: From pip install to Production</h1>
+      <p class="hero-subtitle">6 chapters. Docker to Ray clusters. Everything the English docs don't cover about self-hosting MinerU at scale.</p>
+      <p style="font-size:0.9rem;color:var(--accent);font-weight:500;margin-bottom:16px;">&#128274; 30-day money-back guarantee</p>
+      <button class="btn-buy paddle-btn" data-price-id="pri_01kwet46xmgtfmf4zvxqkdqr4p">Buy Now — $39</button>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container">
+      <h3 style="color:var(--accent);">Chapter 1: Architecture & Pipeline Design</h3>
+      <p class="section-lead">Text-based PDF? Scanned document? Mixed? Choose the wrong pipeline and your output is garbage.</p>
+      <p><strong>What you'll get:</strong></p>
+      <ul style="margin-left:20px;line-height:2;">
+        <li>Decision tree: text-based vs scanned vs mixed pipeline selection</li>
+        <li>CPU vs GPU path — when GPU acceleration actually matters</li>
+        <li>vLLM vs sglang vs transformers backend selection</li>
+        <li>Full pipeline configuration for each document type</li>
+      </ul>
+      <p style="margin-top:12px;"><a href="/chapters/architecture/">Read free preview →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h3 style="color:var(--accent);">Chapter 2: Docker Production Setup</h3>
+      <p class="section-lead">"Works on my machine" doesn't count when you're processing 10,000 PDFs.</p>
+      <p><strong>What you'll get:</strong></p>
+      <ul style="margin-left:20px;line-height:2;">
+        <li>Multi-stage production Dockerfile with all dependencies pinned</li>
+        <li>docker-compose.yml with MinerU + vLLM + Redis services</li>
+        <li>Model download caching strategy (no re-downloading 2GB models per rebuild)</li>
+        <li>Health checks, resource limits, volume mounts</li>
+      </ul>
+      <p style="margin-top:12px;"><a href="/chapters/docker-setup/">Read free preview →</a></p>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container">
+      <h3 style="color:var(--accent);">Chapter 3: Multi-Node Batch Processing</h3>
+      <p class="section-lead">One GPU can only do so much. Scale to thousands of PDFs with Ray clusters.</p>
+      <p><strong>What you'll get:</strong></p>
+      <ul style="margin-left:20px;line-height:2;">
+        <li>Ray cluster setup for distributed PDF processing</li>
+        <li>Shared storage architecture (NFS/S3)</li>
+        <li>Queue management with failure recovery and retry logic</li>
+        <li>Autoscaling configuration for spot/preemptible instances</li>
+      </ul>
+      <p style="margin-top:12px;"><a href="/chapters/multi-node/">Read free preview →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h3 style="color:var(--accent);">Chapter 4: Performance Tuning</h3>
+      <p class="section-lead">Your GPU is at 40% utilization and you don't know why. Fix it.</p>
+      <p><strong>What you'll get:</strong></p>
+      <ul style="margin-left:20px;line-height:2;">
+        <li>Batch size optimization for your specific GPU</li>
+        <li>GPU memory allocation tuning (CUDA OOM is not a feature)</li>
+        <li>Concurrent worker scaling formula</li>
+        <li>Benchmarking scripts + performance reference table</li>
+      </ul>
+      <p style="margin-top:12px;"><a href="/chapters/performance/">Read free preview →</a></p>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container">
+      <h3 style="color:var(--accent);">Chapter 5: Error Troubleshooting Bible</h3>
+      <p class="section-lead">20+ errors, diagnosed and fixed. Stop translating Chinese GitHub issues at midnight.</p>
+      <p><strong>What you'll get:</strong></p>
+      <ul style="margin-left:20px;line-height:2;">
+        <li>Complete error reference (20+ entries with diagnosis + fix)</li>
+        <li>Debugging checklist for production incidents</li>
+        <li>Memory profiling and OOM troubleshooting scripts</li>
+        <li>Model download corruption detection and recovery</li>
+      </ul>
+      <p style="margin-top:12px;"><a href="/chapters/troubleshooting/">Read free preview →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h3 style="color:var(--accent);">Chapter 6: MinerU vs Docling vs Marker</h3>
+      <p class="section-lead">MinerU isn't always the right tool. Know when to switch.</p>
+      <p><strong>What you'll get:</strong></p>
+      <ul style="margin-left:20px;line-height:2;">
+        <li>Accuracy benchmarks across document types (text, scanned, mixed, table-heavy)</li>
+        <li>Speed comparison at scale (100/1K/10K documents)</li>
+        <li>Decision matrix: which tool for which document type</li>
+        <li>Migration guide: Marker → MinerU and Docling → MinerU</li>
+      </ul>
+      <p style="margin-top:12px;"><a href="/chapters/comparison/">Read free preview →</a></p>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container">
+      <h3 style="color:var(--accent);">Bonus: CI/CD Pipeline (Paid Only)</h3>
+      <p class="section-lead">GitHub Actions automated PDF processing pipeline. Push a PDF, get Markdown back.</p>
+      <p><strong>What you'll get:</strong></p>
+      <ul style="margin-left:20px;line-height:2;">
+        <li>Full GitHub Actions workflow for automated document processing</li>
+        <li>Self-hosted runner setup for GPU access</li>
+        <li>Artifact storage and notification integration</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="price-block">
+        <p class="badge badge-green">Launch Special</p>
+        <div class="price"><span style="text-decoration:line-through;color:var(--gray-500);font-size:1.8rem;font-weight:400;">$49</span> <span style="color:var(--google-green);">$39</span></div>
+        <div class="price-note">One-time payment. Lifetime updates. <span style="color:var(--accent);">· tax included</span></div>
+        <button class="btn-buy paddle-btn" data-price-id="pri_01kwet46xmgtfmf4zvxqkdqr4p">Get the Production Guide — $39</button>
+        <p style="font-size:.9rem;color:var(--accent);font-weight:500;margin-top:16px;">&#128274; 30-day money-back guarantee</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container" style="text-align:center;">
+      <h2>30-Day Money-Back Guarantee</h2>
+      <p class="section-lead" style="max-width:600px;margin:0 auto;">If this guide doesn't save you at least 20 hours of production debugging, email us within 30 days for a full refund. No questions asked.</p>
+    </div>
+  </section>
+</main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Unofficial community resource. Not affiliated with OpenDataLab. <a href="https://github.com/opendatalab/MinerU">Official MinerU repo</a>.</p>
+      <p><a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a> &middot; <a href="/refunds/">Money-Back Guarantee</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js" defer></script>
+</body>
+</html>

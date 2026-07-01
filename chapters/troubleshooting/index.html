@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error Troubleshooting Bible — MinerU Production Guide</title>
+  <meta name="description" content="20+ MinerU errors diagnosed and fixed. OOM killers, CUDA errors, ray actor failures, model download corruption.">
+  <meta name="robots" content="index, follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"></noscript>
+  <meta property="og:title" content="Error Troubleshooting Bible — MinerU Production Guide">
+  <meta property="og:description" content="20+ MinerU errors diagnosed and fixed. OOM killers, CUDA errors, ray actor failures, model download corruption.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://mineru.dev/chapters/troubleshooting/">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mineru.dev/assets/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Error Troubleshooting Bible — MinerU Production Guide">
+  <meta name="twitter:description" content="20+ MinerU errors diagnosed and fixed. OOM killers, CUDA errors, ray actor failures, model download corruption.">
+  <meta name="twitter:image" content="https://mineru.dev/assets/og-image.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://mineru.dev/chapters/troubleshooting/">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" },
+        { "@type": "ListItem", "position": 2, "name": "Production Guide", "item": "https://mineru.dev/production-guide/" },
+        { "@type": "ListItem", "position": 3, "name": "Error Troubleshooting Bible", "item": "https://mineru.dev/chapters/troubleshooting/" }
+      ]
+    }
+  </script>
+</head>
+<body>
+  <div class="preview-banner">Free preview — Top 5 errors (of 20+). <a href="/production-guide/">Get the guide</a> for the complete error reference.</div>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 100 100"><rect fill="#7c3aed" width="100" height="100" rx="22"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="56" font-family="sans-serif" font-weight="bold">MU</text></svg>MinerU Guide
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/production-guide/">Production Guide</a></li>
+        <li><a href="/chapters/docker-setup/">Free Chapters</a></li>
+        <li><a href="https://github.com/opendatalab/MinerU" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="/production-guide/" class="nav-cta">Get the Guide — $39</a></li>
+      </ul>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container" style="max-width:780px;">
+        <p style="font-size:0.85rem;color:var(--accent);font-weight:600;margin-bottom:8px;">Chapter 5</p>
+        <h1>Error Troubleshooting Bible</h1>
+        <p class="section-lead">MinerU has 175 releases, 2,000+ GitHub issues, and error messages that assume you read Chinese. Here are the top 5 errors that kill production deployments — and exactly how to fix them.</p>
+
+        <h2>Error #1: CUDA Out of Memory</h2>
+        <pre><code class="language-text">torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB
+(GPU 0; 15.77 GiB total capacity; 14.92 GiB already allocated)</code></pre>
+        <p><strong>Why it happens:</strong> Multiple Ray workers each load a full copy of the VLM model. Two workers + VLM = 16GB+ on a 16GB card.</p>
+        <p><strong>Fix:</strong> Set <code>RAY_NUM_WORKERS=1</code> when VLM is enabled, or offload VLM to a separate GPU. Reduce batch size with <code>batch_size=2</code>. Enable FP16 VLM inference.</p>
+
+        <h2>Error #2: Ray Actor Death</h2>
+        <pre><code class="language-text">ray.exceptions.RayActorError: The actor died unexpectedly before finishing this task.
+        Cause: The actor is dead because its worker process has died.</code></pre>
+        <p><strong>Why it happens:</strong> A single corrupted PDF causes a segfault in PyMuPDF or PaddlePaddle's C++ layer. The entire Ray actor process dies, taking your batch with it.</p>
+        <p><strong>Fix:</strong> Wrap PDF processing in a subprocess with a timeout. Use Ray's <code>max_restarts</code> and <code>max_task_retries</code>. Isolate suspicious PDFs with a pre-flight check script.</p>
+
+        <h2>Error #3: Model Download Corruption</h2>
+        <pre><code class="language-text">OSError: [Errno 5] Input/output error: 'models/layout/det_db_mv3.pdparams'
+RuntimeError: PaddleCheck failed: Cannot open file</code></pre>
+        <p><strong>Why it happens:</strong> MinerU downloads 2GB+ of models on first run. Network interruption, disk full, or Docker layer caching bugs corrupt the download silently.</p>
+        <p><strong>Fix:</strong> Pre-download models in Dockerfile with checksum verification. Use a dedicated model cache volume. Run <code>magic-pdf --verify-models</code> before starting the queue.</p>
+
+        <h2>Error #4: Version Conflict Hell</h2>
+        <pre><code class="language-text">ERROR: pip's dependency resolver does not currently take into account all the packages.
+magic-pdf 2.x requires protobuf<=3.20, but ray 2.9 requires protobuf>=3.23</code></pre>
+        <p><strong>Why it happens:</strong> MinerU pins <code>protobuf&lt;=3.20</code> for PaddlePaddle compatibility, but Ray 2.9+ needs <code>protobuf&gt;=3.23</code>. These two are fundamentally incompatible without patching.</p>
+        <p><strong>Fix:</strong> Use Ray 2.7 (last version compatible with protobuf 3.20), or apply the protobuf compatibility patch that monkey-patches Ray's gRPC imports. The guide includes the exact patch file.</p>
+
+        <h2>Error #5: Empty Output / Silent Failure</h2>
+        <pre><code class="language-text"># No error message. Output directory exists but is empty.
+$ ls output/0447ae2_origin.md
+# (empty file, 0 bytes)</code></pre>
+        <p><strong>Why it happens:</strong> MinerU's pipeline returns empty output when the layout detection model fails to find any text regions. Most common with: dark-background PDFs, scanned documents with poor contrast, and PDFs where text is embedded as curves/outlines.</p>
+        <p><strong>Fix:</strong> Check the pipeline stage logs (not just the final output). Set <code>--log-level DEBUG</code> to see which stage failed. For curve-text PDFs, force OCR path with <code>--force-ocr</code>. Pre-process low-contrast documents with ImageMagick.</p>
+
+        <div class="paywall">
+          <div class="paywall-locked">&#128274;</div>
+          <p><strong>Full chapter continues with:</strong></p>
+          <p>15 additional errors with diagnosis + fix · Complete error reference table (symptom → cause → fix → prevention) · Debugging checklist for production incidents · Memory profiling script for leak detection · Orphan process cleanup automation · log-level configuration per pipeline stage</p>
+          <a href="/production-guide/" class="btn btn-primary">Get the Full Guide — $39</a>
+        </div>
+
+        <div class="chapter-nav">
+          <a href="/chapters/performance/">← Chapter 4: Performance</a>
+          <a href="/chapters/comparison/">Chapter 6: Comparison →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Unofficial community resource. Not affiliated with OpenDataLab. <a href="https://github.com/opendatalab/MinerU">Official MinerU repo</a>.</p>
+      <p><a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a> &middot; <a href="/refunds/">Money-Back Guarantee</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js" defer></script>
+</body>
+</html>

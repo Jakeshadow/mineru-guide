@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MinerU vs Docling vs Marker — Production Guide</title>
+  <meta name="description" content="Accuracy benchmarks, speed comparison, decision matrix. When MinerU wins, when it doesn't, and how to migrate.">
+  <meta name="robots" content="index, follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"></noscript>
+  <meta property="og:title" content="MinerU vs Docling vs Marker — Production Guide">
+  <meta property="og:description" content="Accuracy benchmarks, speed comparison, decision matrix. When MinerU wins, when it doesn't, and how to migrate.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://mineru.dev/chapters/comparison/">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mineru.dev/assets/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MinerU vs Docling vs Marker — Production Guide">
+  <meta name="twitter:description" content="Accuracy benchmarks, speed comparison, decision matrix. When MinerU wins, when it doesn't, and how to migrate.">
+  <meta name="twitter:image" content="https://mineru.dev/assets/og-image.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://mineru.dev/chapters/comparison/">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" },
+        { "@type": "ListItem", "position": 2, "name": "Production Guide", "item": "https://mineru.dev/production-guide/" },
+        { "@type": "ListItem", "position": 3, "name": "MinerU vs Docling vs Marker", "item": "https://mineru.dev/chapters/comparison/" }
+      ]
+    }
+  </script>
+</head>
+<body>
+  <div class="preview-banner">Free preview — 35% of full chapter. <a href="/production-guide/">Get the guide</a> for full benchmark data + migration guide.</div>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 100 100"><rect fill="#7c3aed" width="100" height="100" rx="22"/><text x="50" y="68" text-anchor="middle" fill="white" font-size="56" font-family="sans-serif" font-weight="bold">MU</text></svg>MinerU Guide
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/production-guide/">Production Guide</a></li>
+        <li><a href="/chapters/docker-setup/">Free Chapters</a></li>
+        <li><a href="https://github.com/opendatalab/MinerU" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="/production-guide/" class="nav-cta">Get the Guide — $39</a></li>
+      </ul>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container" style="max-width:780px;">
+        <p style="font-size:0.85rem;color:var(--accent);font-weight:600;margin-bottom:8px;">Chapter 6</p>
+        <h1>MinerU vs Docling vs Marker</h1>
+        <p class="section-lead">MinerU is the most popular open-source PDF parser. But "most popular" doesn't mean "best for your documents." Here's when MinerU wins, when Docling or Marker is the better choice, and how to switch.</p>
+
+        <h2>Quick Comparison</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Dimension</th><th>MinerU</th><th>Docling</th><th>Marker</th></tr></thead>
+            <tbody>
+              <tr><td>GitHub Stars</td><td>72.3K</td><td>18K</td><td>23K</td></tr>
+              <tr><td>Best for</td><td>Chinese + multilingual PDFs</td><td>Enterprise document understanding</td><td>English academic papers</td></tr>
+              <tr><td>OCR Engine</td><td>PaddleOCR (built-in)</td><td>EasyOCR + Azure (pluggable)</td><td>Tesseract + Surya</td></tr>
+              <tr><td>GPU Required</td><td>Recommended (CPU works)</td><td>Optional</td><td>Recommended</td></tr>
+              <tr><td>Table Extraction</td><td>Excellent (Chinese-optimized)</td><td>Good (layout hierarchy)</td><td>Fair (basic tables)</td></tr>
+              <tr><td>Formula/LaTeX</td><td>Good</td><td>Excellent (equation parsing)</td><td>Good</td></tr>
+              <tr><td>Output Formats</td><td>Markdown, JSON, HTML</td><td>Markdown, JSON, DocTags</td><td>Markdown, JSON, HTML</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>When MinerU Wins</h2>
+        <ul>
+          <li><strong>Chinese, Japanese, Korean documents</strong> — PaddleOCR was built for CJK. MinerU's CJK accuracy is measurably better than both alternatives.</li>
+          <li><strong>Mixed-language PDFs</strong> — Documents with Chinese + English side-by-side. MinerU's layout model handles multi-column bilingual layouts that confuse Docling and Marker.</li>
+          <li><strong>Complex tables with merged cells</strong> — MinerU's table extraction handles merged cells, spanning headers, and nested tables better than either alternative.</li>
+          <li><strong>Scanned documents at scale</strong> — PaddleOCR is faster than EasyOCR + Tesseract for batch OCR workloads. If you're processing thousands of scanned PDFs, MinerU is the throughput winner.</li>
+        </ul>
+
+        <h2>When MinerU Loses</h2>
+        <ul>
+          <li><strong>Enterprise document understanding</strong> — Docling's layout hierarchy and document structure understanding (headings, sections, reading order) is more sophisticated. If you need structured document understanding beyond text extraction, Docling wins.</li>
+          <li><strong>Academic papers (English)</strong> — Marker was built by a researcher for research papers. Its LaTeX formula extraction and citation handling are better for English academic content.</li>
+          <li><strong>Simple English PDFs</strong> — For born-digital English PDFs without complex layouts, all three tools work fine. Marker has the simplest API in this case.</li>
+        </ul>
+
+        <div class="paywall">
+          <div class="paywall-locked">&#128274;</div>
+          <p><strong>Full chapter continues with:</strong></p>
+          <p>Full accuracy benchmarks across 6 document types (text, scanned, mixed, table-heavy, formula-heavy, bilingual) · Speed comparison at 100/1K/10K document scale · Detailed decision matrix with document type scoring · Migration guide: Marker → MinerU and Docling → MinerU · Cost comparison: GPU hours per 1,000 pages for each tool</p>
+          <a href="/production-guide/" class="btn btn-primary">Get the Full Guide — $39</a>
+        </div>
+
+        <div class="chapter-nav">
+          <a href="/chapters/troubleshooting/">← Chapter 5: Error Bible</a>
+          <span></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Unofficial community resource. Not affiliated with OpenDataLab. <a href="https://github.com/opendatalab/MinerU">Official MinerU repo</a>.</p>
+      <p><a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a> &middot; <a href="/refunds/">Money-Back Guarantee</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect fill="#7c3aed" width="1200" height="630"/>
+  <rect fill="#ede9fe" y="470" width="1200" height="160"/>
+  <text x="600" y="280" text-anchor="middle" fill="white" font-size="72" font-family="sans-serif" font-weight="bold">MinerU Production Guide</text>
+  <text x="600" y="360" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="36" font-family="sans-serif">1.8 million downloads. One README.</text>
+  <text x="600" y="560" text-anchor="middle" fill="#7c3aed" font-size="28" font-family="sans-serif" font-weight="600">mineru.dev</text>
+</svg>
