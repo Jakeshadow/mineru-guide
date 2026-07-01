@@ -18,10 +18,12 @@ header-includes: |
   \definecolor{accent}{HTML}{7c3aed}
   \definecolor{darkpurple}{HTML}{4c1d95}
   \definecolor{codebg}{HTML}{f8f9fa}
+  \usepackage{setspace}
+  \setstretch{1.12}
   \usepackage{titlesec}
   \titleformat{\section}{\color{darkpurple}\Large\bfseries}{\thesection}{1em}{}
-  \usepackage{fancyvrb}
-  \fvset{frame=single,framesep=6pt,rulecolor=\color{accent},framerule=2pt}
+  \usepackage{fvextra}
+  \fvset{frame=single,framesep=6pt,rulecolor=\color{accent},framerule=2pt,breaklines=true,breakanywhere=true}
   \usepackage{hyperref}
   \hypersetup{colorlinks=true,linkcolor=accent,urlcolor=accent}
 ---
@@ -171,7 +173,7 @@ ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.11 python3.11-dev python3.11-venv \
+    python3.11 python3.11-dev \
     curl wget ca-certificates git \
     libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender-dev \
     libgomp1 libssl3 \
@@ -215,7 +217,7 @@ PaddleOCR(lang='ch', det_model_dir='/models/ocr/det',
 FROM nvidia/cuda:12.1-runtime-ubuntu22.04 AS runtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.11 python3.11-venv \
+    python3.11 \
     libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender-dev \
     libgomp1 libssl3 \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
