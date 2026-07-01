@@ -1,0 +1,19 @@
+# MinerU Production Guide
+> Production deployment guide for self-hosting MinerU — Docker, Ray clusters, GPU tuning, error troubleshooting.
+
+## Core pages
+Page: https://mineru.dev/
+Page: https://mineru.dev/production-guide/
+
+## Chapter previews
+Page: https://mineru.dev/chapters/architecture/ — Pipeline decision tree, CPU vs GPU, vLLM vs sglang backend selection
+Page: https://mineru.dev/chapters/docker-setup/ — Multi-stage Dockerfile, docker-compose, model caching
+Page: https://mineru.dev/chapters/multi-node/ — Ray cluster setup, shared storage, queue management
+Page: https://mineru.dev/chapters/performance/ — Batch size tuning, GPU memory profiling, worker scaling
+Page: https://mineru.dev/chapters/troubleshooting/ — Error reference table, protobuf compat patch, debugging checklist
+Page: https://mineru.dev/chapters/comparison/ — MinerU vs Docling vs Marker benchmarks, decision matrix, migration guides
+
+## Legal
+Page: https://mineru.dev/privacy/
+Page: https://mineru.dev/terms/
+Page: https://mineru.dev/refunds/
