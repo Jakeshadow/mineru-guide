@@ -28,9 +28,25 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" }
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "MinerU Guide",
+        "url": "https://mineru.dev/",
+        "description": "Unofficial community guide for self-hosting MinerU in production."
+      },
+      {
+        "@type": "WebSite",
+        "name": "MinerU Guide",
+        "url": "https://mineru.dev/",
+        "description": "Self-hosted MinerU production guides — Docker, Ray GPU clusters, tuning, troubleshooting."
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mineru.dev/" }
+        ]
+      }
     ]
   }
   </script>
