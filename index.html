@@ -50,8 +50,9 @@
     ]
   }
   </script>
-  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js" defer></script>
   <script>
+document.addEventListener('DOMContentLoaded', function() {
     Paddle.Initialize({
       token: "live_ce00442faf7f18c3f065320ce95",
       environment: "production",
@@ -64,6 +65,7 @@
         }
       }
     });
+});
   </script>
   <script type="application/ld+json">
   {
@@ -145,33 +147,33 @@
       <div class="container">
         <h2>What This Guide Covers</h2>
         <p class="section-lead">Six chapters. Each solves a problem buried in Chinese-language forums, Gitee issues, and Bilibili videos — that the English README never mentions.</p>
-        <div class="chapters-grid">
-          <div class="chapter-card">
+        <ol class="chapters-grid">
+          <li class="chapter-card">
             <h3>1. Architecture & Pipeline Design</h3>
             <p>Text-based vs scanned vs mixed pipeline decision tree. CPU vs GPU path selection. vLLM vs sglang backend trade-offs.</p>
             <p><small>You'll get: Decision tree, pipeline configs, backend selection matrix</small></p>
           </div>
-          <div class="chapter-card">
+          <li class="chapter-card">
             <h3>2. Docker Production Setup</h3>
             <p>Why Docker matters for reproducibility. The full Chromium-like dependency chain: Python 3.10-3.12, ray, model downloads.</p>
             <p><small>You'll get: Multi-stage Dockerfile, docker-compose.yml, health checks</small></p>
           </div>
-          <div class="chapter-card">
+          <li class="chapter-card">
             <h3>3. Multi-Node Batch Processing</h3>
             <p>Ray cluster architecture for processing thousands of PDFs. Shared storage, queue management, failure recovery.</p>
             <p><small>You'll get: Ray cluster config, queue manager, recovery scripts</small></p>
           </div>
-          <div class="chapter-card">
+          <li class="chapter-card">
             <h3>4. Performance Tuning</h3>
             <p>Batch size optimization, GPU memory allocation, concurrent worker scaling. Stop guessing and start measuring.</p>
             <p><small>You'll get: Benchmarking scripts, tuning reference table, GPU profiler</small></p>
           </div>
-          <div class="chapter-card">
+          <li class="chapter-card">
             <h3>5. Error Troubleshooting Bible</h3>
             <p>20+ documented errors with diagnosis and fix. OOM killers, CUDA errors, ray actor failures, model download corruption.</p>
             <p><small>You'll get: Error reference table, debugging checklist, memory profiler</small></p>
           </div>
-          <div class="chapter-card">
+          <li class="chapter-card">
             <h3>6. MinerU vs Docling vs Marker</h3>
             <p>Benchmark data, accuracy comparison, speed tests. When MinerU wins, when it doesn't, and how to migrate.</p>
             <p><small>You'll get: Benchmark results, decision matrix, migration guide</small></p>
@@ -250,11 +252,13 @@
         </div>
       </div>
     </section>
+  <p style="color:var(--text-muted);font-size:0.85rem;text-align:center;">Last updated: July 3, 2026</p>
   </main>
 
   <footer class="footer">
     <div class="container">
       <p>Unofficial community resource. Not affiliated with OpenDataLab. <a href="https://github.com/opendatalab/MinerU">Official MinerU repo</a>.</p>
+      <p style="margin-top:.5rem;">By <strong>Luke Wang</strong> — MinerU production deployment researcher. <a href="mailto:mineru-guide@proton.me">mineru-guide@proton.me</a></p>
       <p><a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a> &middot; <a href="/refunds/">Money-Back Guarantee</a></p>
     </div>
   </footer>
